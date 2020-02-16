@@ -51,10 +51,11 @@ class Gplaylist:
                         filenamedot = name.rfind('.')
                         filename = name[filenameen+1:filenamedot]
                         filepath = name[len(dirpath)+1:]
-                        print("dirpath == "+dirpath)
-                        print("dirpath2 == "+dirpath[dirpath.rfind(sp):])
                         f.write('#EXTINF:' + str(filelength) + ',' + filename + '\n'\
-                        + dirpath[dirpath.rfind(sp)+1:] + sp + filepath + '\n')
+                        + os.path.relpath(self.args[i],self.savepath) + sp + filepath + '\n')
+                        #↓の書き方を使いたいが\で二行にわたって書くとなぜかファイルに大量のインデントが挿入される
+                        #f.write(f"#EXITNF:{str(filelength)},{filename}\n\
+                        #{os.path.relpath(self.args[i],self.savepath)}{sp}{filepath}\n")
                         yyy += 1
                     else:
                         pass
