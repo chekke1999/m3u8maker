@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 #保存先を基準に相対パスでプレイリスト生成。指定が無ければ対象のフォルダと同じディレクトにm3u8を生成。
+#tstee
 import glob,os,sys
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
