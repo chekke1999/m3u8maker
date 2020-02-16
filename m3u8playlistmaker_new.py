@@ -11,20 +11,21 @@ from mutagen.oggopus import OggOpus
 sp = os.sep#セパレータ
 class Gplaylist:
     def __init__(self,arg):
+        self.args = arg
         if arg[1] == "-d":
             self.start = 3
+            self.savepath = self.args[2]
         else:
             self.start = 1
-        self.args = arg
     def Gm3u8(self):
         for i in range(self.start,len(self.args)):
+            print('--------------------------------------------')
             dirpath = self.args[i]
             filelist = glob.glob(dirpath + sp + '**', recursive=True)
-            print('--------------------------------------------')
-            playlistname = dirpath[dirpath.rfind(sp)+1:]
-            savepath = dirpath[:dirpath.rfind(sp)]
-
-            with open(savepath + sp + playlistname + '.m3u8', 'wt', encoding='utf-8-sig') as f:
+            playlistname = dirpath[dirpath.rfind(sp)+1:]#右から検索して最初のセパレータの位置まで行頭からスライス抽出
+            if self.args[1] != "-d":#保存先指定がない場合各プレイリスト元のディレクトリと同じ場所に保存
+                self.savepath = dirpath[:dirpath.rfind(sp)]#右から検索して最初のセパレータ検出したところを行末スライス抽出S
+            with open(self.savepath + sp + playlistname + '.m3u8', 'wt', encoding='utf-8-sig') as f:
                 f.write('#EXTM3U\n')
                 yyy = 0
                 for name in filelist:
@@ -52,11 +53,12 @@ class Gplaylist:
                         filepath = name[len(dirpath)+1:]
                         print("dirpath == "+dirpath)
                         print("dirpath2 == "+dirpath[dirpath.rfind(sp):])
-                        f.write('#EXTINF:' + str(filelength) + ',' + filename + '\n' + dirpath[dirpath.rfind(sp)+1:] + sp + filepath + '\n')
+                        f.write('#EXTINF:' + str(filelength) + ',' + filename + '\n'\
+                        + dirpath[dirpath.rfind(sp)+1:] + sp + filepath + '\n')
                         yyy += 1
                     else:
                         pass
-            print("--------------------------------------------\n" + savepath + sp + playlistname + '.m3u8\nが出力されました。')
+            print("--------------------------------------------\n" + self.savepath + sp + playlistname + '.m3u8\nが出力されました。')
             print("ファイル数：" + str(yyy))
 
 
