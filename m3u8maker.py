@@ -3,27 +3,33 @@ import glob,os,sys,argparse,inspect
 sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
 from lib.mutagen import File
 from lib.pathlib import Path
+from lib.pathlib import PurePath
 
 class PathOperation:
     # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None)
     def __init__(self, args):
+        # ディレクトリ存在チェック
         for dpath in args.input:
-            if not Path.is_dir(dpath):
+            check_dir = Path(dpath)
+            if not check_dir.is_dir():
                 print(f"inputに指定したディレクトリ: {dpath}は存在しません。\n処理を中断します。")
                 exit()
-        self.savepath = __m3u8SavePath(args)
-    @staticmethod
-    def __m3u8SavePath(args):
-        if args.save = None :
-            for path in args.input:
+        self.args = args
+
+
+    def m3u8SavePath(self):
+        if self.args.save == None:
+            save_path = []
+            for path in self.args.input:
+                
                 p = Path(path)
-                if args.sub_directory:
-                    
+                if self.args.sub_directory:
+                    save_path.append(p)
                 else:
-                    save_path.append(p.parent())
+                    save_path.append(p.parent)
         else:
-            save_path = [args.save]
-        return = save_path
+            save_path = Path(self.args.save)
+        return save_path
 
 
 if __name__ == "__main__":
@@ -39,6 +45,6 @@ if __name__ == "__main__":
     parser.add_argument("-s","--save", help="\
     プレイリストの保存先を指定する。")
     args = parser.parse_args()
-    print(args)
+    po = PathOperation(args)
 
-
+    print(po.m3u8SavePath())
