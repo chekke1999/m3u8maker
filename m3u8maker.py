@@ -8,29 +8,42 @@ from lib.pathlib import PurePath
 class PathOperation:
     # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None)
     def __init__(self, args):
-        # ディレクトリ存在チェック
+        # 入力されたディレクトリ存在チェック
         for dpath in args.input:
             check_dir = Path(dpath)
             if not check_dir.is_dir():
                 print(f"inputに指定したディレクトリ: {dpath}は存在しません。\n処理を中断します。")
                 exit()
-        self.args = args
-
-
-    def m3u8SavePath(self):
-        if self.args.save == None:
-            save_path = []
-            for path in self.args.input:
-                
-                p = Path(path)
-                if self.args.sub_directory:
-                    save_path.append(p)
+        # プレイリスト辞書定義
+        self.PlaylistProperty = {
+            "savedir": args.save,
+            "playlistName": {
+                "subject_dir": None,
+                "savedir": None
+            }
+        }
+        # inputされたパスはpathlib
+        for path in args.input:
+            p = Path(path)
+            if args.sub_directory:
+                self.playlistName = 
+            else:
+        # m3u8保存先確定処理
+        if args.save == None:
+            self.__m3u8SavePath = []
+            for path in input_path:
+                if args.sub_directory:
+                    self.__m3u8SavePath.append(path)
                 else:
-                    save_path.append(p.parent)
+                    self.__m3u8SavePath.append(path.parent)
         else:
-            save_path = Path(self.args.save)
-        return save_path
+            self.__m3u8SavePath = Path(args.save)
+        # m3u8に記述する音声ファイルパス
 
+        
+    @property
+    def m3u8SavePath(self):
+        return self.__m3u8SavePath
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ディレクトリをベースにm3u8形式のプレイリストを生成します。")
@@ -47,4 +60,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     po = PathOperation(args)
 
-    print(po.m3u8SavePath())
+    print(po.m3u8SavePath)
