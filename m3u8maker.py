@@ -8,26 +8,40 @@ from lib.pathlib import PurePath
 class PathOperation:
     # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None)
     def __init__(self, args):
-        # 入力されたディレクトリ存在チェック
-        for dpath in args.input:
-            check_dir = Path(dpath)
-            if not check_dir.is_dir():
-                print(f"inputに指定したディレクトリ: {dpath}は存在しません。\n処理を中断します。")
-                exit()
         # プレイリスト辞書定義
-        self.PlaylistProperty = {
+        self.__PlaylistProperty = {
             "savedir": args.save,
-            "playlistName": {
-                "subject_dir": None,
-                "savedir": None
+            "absolute_path":args.absolute_path,
+            "playlist":{
+                "playlistName": {
+                    "subject_dir": None,
+                    "savedir": None
+                }
             }
         }
-        # inputされたパスはpathlib
-        for path in args.input:
-            p = Path(path)
-            if args.sub_directory:
-                self.playlistName = 
+
+        for dpath in args.input:
+            dirlib = Path(dpath)
+            # 入力されたディレクトリ存在チェック
+            if not dirlib.is_dir():
+                print(f"inputに指定したディレクトリ: {dpath}は存在しません。\n処理を中断します。")
+                exit()
+            # プレイリストの名前確定と、対象ディレクトリ
+            if sub_directory:
+                for dirlib_in in [i for i in dirlib.glob("*") if i.is_dir()]:
+                    self.__PlaylistProperty["playlist"] = {
+                        dirlib_in.name:{
+                            "subject_dir":dirlib_in
+                        }
+                    }
             else:
+                self.__PlaylistProperty["playlist"] = {
+                    dirlib.name:{
+                        "subject_dir":dirlib
+                    }
+                }
+            
+
         # m3u8保存先確定処理
         if args.save == None:
             self.__m3u8SavePath = []
