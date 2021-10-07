@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import glob,os,sys,argparse,inspect,re
-from re import A
-sys.path.append(os.path.join(os.path.dirname(__file__), 'lib'))
 from pprint import pprint
-from lib.mutagen import File
-from lib.pathlib import Path
-from lib.pathlib import PurePath
+from pathlib import Path
+from pathlib import PurePath
+from mutagen import File
+
 
 def Playlist(args):
+    # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None) 
     # プレイリストの保存先&ファイル名ジェネレータを返すジェネレータ
     playlist_dict = {}
     sep = os.sep
@@ -16,16 +16,21 @@ def Playlist(args):
         playlist_dict["s_path"] = f"{args.save}{sep}{dirlib.name}.m3u8" if args.save != None else f"{dirlib.resolve()}.m3u8"
         # ファイルリストジェネレーター
         def flie_list_gen(): 
-            for k in (str(j) for j in (i for i in dirlib.glob("**/*") if i.is_file()) if File(str(j)) != None):
+            for afile in (j for j in (i for i in dirlib.glob("**/*") if i.is_file()) if File(str(j)) != None):
+                afile_str = str(afile)
+                audio_length = re.match("(.*)(?=\.)",str(File(afile_str).info.length)).group()
                 # デフォトは相対パス
                 if args.absolute_path:
-                    yield k
+                    yield {"title":afile.stem,"file":afile_str,"length":audio_length}
                 else:
-                    yield os.path.relpath(k,os.path.dirname(playlist_dict["s_path"]))
-        playlist_dict["f_list"] = flie_list_gen()
+                    yield {
+                        "title":afile.stem,
+                        "file":os.path.relpath(afile_str,os.path.dirname(playlist_dict["s_path"])), 
+                        "length":audio_length
+                        }
+        playlist_dict["f_info"] = flie_list_gen()
         return playlist_dict
     for dpath in args.input:
-        # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None) 
         dirlib = Path(dpath)
         # 入力されたディレクトリ存在チェック
         if not dirlib.is_dir():
@@ -39,9 +44,14 @@ def Playlist(args):
             # サブディレクトリ無効時
             yield set_palylist(dirlib)
 
-def PlaylistWrite(playlist_dict):
-    # with opne(playlist_dict["s_path"]):
-    #     for file_path in playlist_dict["f_gen"]:
+def PlaylistWrite(pdict):
+    with open(pdict["s_path"],mode="w",encoding='utf-8') as f:
+        f.write('#EXTM3U\n')
+        for finfo in pdict["f_info"]:
+            pprint(finfo["title"])
+            f.write(f"#EXTINF:{finfo['length']},{finfo['title']}\n{finfo['file']}\n")
+    print("-"*80)
+    print(f"{pdict['s_path']}が出力されました")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ディレクトリをベースにm3u8形式のプレイリストを生成します。",formatter_class=argparse.RawTextHelpFormatter)
