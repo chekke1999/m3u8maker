@@ -19,53 +19,60 @@ class Playlist:
         for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
             if File(str(files)) != None:
                 yield files 
-    # プレイリストに記述する為に必要なファイルの情報を返すジェネレータ
-    def __FileInfo(self,dirlib):
-        for afile in self.AudioFileSearch(dirlib):
-            afile_str = str(afile)
-            audio_length = re.match("(.*)(?=\.)",str(File(afile_str).info.length)).group()
-            # デフォトは相対パス
-            if self.absolute_path:
-                yield {"title":afile.stem,"file":afile_str,"length":audio_length}
-            else:
-                yield {
-                    "title":afile.stem,
-                    "file":os.path.relpath(afile_str,os.path.dirname(self.save_path)), 
-                    "length":audio_length
-                    }
+    def RemoteDir(self,path):
+            print("リモート接続として処理します")
+            server_path = Path(self.conf["server_path"])
+            client_path = path.replace("\\","/")
+            return Path(str(server_path) + re.search(f"(?<={server_path.name})(.*)",client_path).group())
+
     # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
-    def __InputChecker(self):
+    def __Main(self):
+        if self.remote:
+            self.save = self.RemoteDir(self.save)
+        # プレイリストに記述する為に必要なファイルの情報を返すジェネレータ
+        def FileInfo(dirlib):
+            for afile in self.AudioFileSearch(dirlib):
+                ap_path = afile.resolve()
+                audio_length = re.match("(.*)(?=\.)",str(File(ap_path).info.length)).group()
+                # デフォトは相対パス
+                if self.absolute_path:
+                    yield {"title":afile.stem,"file":ap_path,"length":audio_length}
+                else:
+                    yield {
+                        "title":afile.stem,
+                        "file":os.path.relpath(ap_path,os.path.dirname(Path(self.save_path).resolve())), 
+                        "length":audio_length
+                        }
+        # 保存先確定処理
+        def SaveDir(dirlib):
+            self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8" if self.save != None else f"{dirlib.resolve()}.m3u8"
+            return  self.save_path
         for dpath in self.input:
             sep = os.sep
             # リモートの有無をチェックして基点ファイルを作成
             if self.remote:
-                print("リモート接続として処理します")
-                server_path = Path(self.conf["server_path"])
-                client_path = dpath.replace("\\","/")
-                dirlib= Path(str(server_path) + re.search(f"(?<={server_path.name})(.*)",client_path).group())
+                dirlib = self.RemoteDir(dpath)
             else:
                 dirlib = Path(dpath)
-            print(dirlib)
-            # 保存先確定処理
-            self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8" if self.save != None else f"{dirlib.resolve()}.m3u8"
             # 入力されたディレクトリ存在チェック
             if not dirlib.is_dir():
                 print(f"inputに指定したディレクトリ: {dpath}は存在しません。")
                 continue
-                    
             # サブディレクトリ有効チェック
             if self.sub_directory:
                 for dirlib_in in (i for i in dirlib.glob("*") if i.is_dir()):
-                    yield self.__FileInfo(dirlib_in),self.save_path
+                    SaveDir(dirlib_in)
+                    yield FileInfo(dirlib_in),self.save_path
             else:
                 # サブディレクトリ無効時
-                yield self.__FileInfo(dirlib),self.save_path
+                SaveDir(dirlib)
+                yield FileInfo(dirlib),self.save_path
     def Write(self):
-        for result in self.__InputChecker():
+        for result in self.__Main():
             save_path = result[1]
-            for finfo in result[0]:
-                with open(save_path,mode="w",encoding='utf-8') as f:
-                    f.write('#EXTM3U\n')
+            with open(save_path,mode="w",encoding='utf-8') as f:
+                f.write('#EXTM3U\n')
+                for finfo in result[0]:
                     print(finfo["title"])
                     f.write(f"#EXTINF:{finfo['length']},{finfo['title']}\n{finfo['file']}\n")
             print("-"*80)
