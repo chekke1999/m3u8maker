@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os,argparse,re,toml
 from pprint import pprint
-from pathlib import Path
+from pathlib import Path,PurePath,PosixPath,PureWindowsPath
 from mutagen import File
 
 class Playlist:
@@ -10,10 +10,18 @@ class Playlist:
         self.sub_directory = sub_directory
         self.absolute_path = absolute_path
         self.save = save
-
+        self.remote = remote
+        if remote:
+            sep = os.sep
+            self.conf = toml.load(f"{os.path.dirname(os.path.abspath(__file__))}{sep}remote-config.toml")
+    
+    def AudioFileSearch(self,dirlib):
+        for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
+            if File(str(files)) != None:
+                yield files 
     # プレイリストに記述する為に必要なファイルの情報を返すジェネレータ
     def __FileInfo(self,dirlib):
-        for afile in (j for j in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()) if File(str(j)) != None):
+        for afile in self.AudioFileSearch(dirlib):
             afile_str = str(afile)
             audio_length = re.match("(.*)(?=\.)",str(File(afile_str).info.length)).group()
             # デフォトは相対パス
@@ -28,16 +36,25 @@ class Playlist:
     # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
     def __InputChecker(self):
         for dpath in self.input:
-            dirlib = Path(dpath)
             sep = os.sep
-            # 保存先
+            # リモートの有無をチェックして基点ファイルを作成
+            if self.remote:
+                print("リモート接続として処理します")
+                server_path = Path(self.conf["server_path"])
+                client_path = dpath.replace("\\","/")
+                dirlib= Path(str(server_path) + re.search(f"(?<={server_path.name})(.*)",client_path).group())
+            else:
+                dirlib = Path(dpath)
+            print(dirlib)
+            # 保存先確定処理
             self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8" if self.save != None else f"{dirlib.resolve()}.m3u8"
             # 入力されたディレクトリ存在チェック
             if not dirlib.is_dir():
                 print(f"inputに指定したディレクトリ: {dpath}は存在しません。")
                 continue
+                    
+            # サブディレクトリ有効チェック
             if self.sub_directory:
-                # サブディレクトリ有効時 and ディレクトリか否かのチェック
                 for dirlib_in in (i for i in dirlib.glob("*") if i.is_dir()):
                     yield self.__FileInfo(dirlib_in),self.save_path
             else:
@@ -49,7 +66,7 @@ class Playlist:
             for finfo in result[0]:
                 with open(save_path,mode="w",encoding='utf-8') as f:
                     f.write('#EXTM3U\n')
-                    pprint(finfo["title"])
+                    print(finfo["title"])
                     f.write(f"#EXTINF:{finfo['length']},{finfo['title']}\n{finfo['file']}\n")
             print("-"*80)
             print(f"{self.save_path}が出力されました")
