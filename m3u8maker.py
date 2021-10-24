@@ -27,8 +27,8 @@ class Playlist:
 
     # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
     def __Main(self):
-        if self.remote:
-            self.save = self.RemoteDir(self.save)
+        # if self.remote:
+        #     self.save = self.RemoteDir(self.save)
         # プレイリストに記述する為に必要なファイルの情報を返すジェネレータ
         def FileInfo(dirlib):
             for afile in self.AudioFileSearch(dirlib):
@@ -45,8 +45,12 @@ class Playlist:
                         }
         # 保存先確定処理
         def SaveDir(dirlib):
-            self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8" if self.save != None else f"{dirlib.resolve()}.m3u8"
-            return  self.save_path
+            if self.save != None and not self.remote:
+                self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8"
+            elif self.save != None and self.remote:
+                self.save_path =  f"{self.RemoteDir(self.save)}{sep}{dirlib.name}.m3u8"
+            else:
+                self.save_path =  f"{dirlib.resolve()}.m3u8"
         for dpath in self.input:
             sep = os.sep
             # リモートの有無をチェックして基点ファイルを作成
