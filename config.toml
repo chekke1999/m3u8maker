@@ -1,0 +1,11 @@
+# リモート時とモバイル版作成時の基準となるパス。
+lib_path = "/home/shoji/Music/test"
+
+# モバイル版を起きたいパス。モバイル版のライブラリを生成する処理をしたいなら必須。
+mobile_path = "/home/shoji/Music/test2"
+
+# ffmpegで変換先のフォーマットを決めるためには必須。
+conv_extension = "opus"
+
+# ffmpegで変換する時のオプション。配列で引数を区切る
+ffmpeg_op = ["-ab","96k","-acodec","libopus"]

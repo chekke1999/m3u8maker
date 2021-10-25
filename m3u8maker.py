@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import os,argparse,re,toml
+import os,argparse,re,toml,shutil,sys
 from pprint import pprint
-from pathlib import Path,PurePath,PosixPath,PureWindowsPath
+from pathlib import Path
 from mutagen import File
+from subprocess import call
 
 class Playlist:
     def __init__(self, input_directory:list, sub_directory:bool, absolute_path:bool, save:str, remote:bool):
@@ -11,24 +12,50 @@ class Playlist:
         self.absolute_path = absolute_path
         self.save = save
         self.remote = remote
-        if remote:
-            sep = os.sep
-            self.conf = toml.load(f"{os.path.dirname(os.path.abspath(__file__))}{sep}remote-config.toml")
-    
+        config_path = f"{os.path.dirname(os.path.abspath(__file__))}{os.sep}config.toml"
+        self.conf = toml.load(config_path)
+        # ライブラリの上書き防止
+        # シンボリックリンクを解決した絶対パスを比較
+        if Path(self.conf["lib_path"]).resolve() == Path(self.conf["mobile_path"]).resolve():
+            print(f"設定ファイル: {config_path}", file=sys.stderr)
+            print("以下のlib_pathとmobile_pathの記述が同じです。ライブラリ破壊防止のため終了します。", file=sys.stderr)
+            print(f"lib_path{self.conf['lib_path']}, moble_path: {self.conf['mobile_path']}", file=sys.stderr)
+            exit()
+
     def AudioFileSearch(self,dirlib):
         for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
             if File(str(files)) != None:
                 yield files 
-    def RemoteDir(self,path):
-            print("リモート接続として処理します")
-            server_path = Path(self.conf["server_path"])
-            client_path = path.replace("\\","/")
-            return Path(str(server_path) + re.search(f"(?<={server_path.name})(.*)",client_path).group())
 
-    # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
-    def __Main(self):
-        # if self.remote:
-        #     self.save = self.RemoteDir(self.save)
+    # パス変換処理本体
+    def PathConv(self, after:str, from_behind:str, source:str):
+        return Path(after + re.search(f"(?<={from_behind})(.*)",source).group())
+    # リモート時のパス変換処理ラップ
+    def RemoteDir(self,path):
+        server_path = Path(self.conf["lib_path"])
+        client_path = path.replace("\\","/")
+        return self.PathConv(str(server_path),server_path.name,client_path)
+
+    def Convinfo(self,dirlib):
+        def CoverSerch(dirlib):
+            reg_str = "(cover|folder).(png|jpg|jpeg)"
+            for coverf in (i for i in sorted(dirlib.glob("**/*")) if re.search(reg_str,str(i),flags=re.IGNORECASE)):
+                yield coverf
+        conv = Path(self.conf["mobile_path"] + re.search(f"(?<={self.conf['lib_path']})(.*)",str(dirlib)).group())
+        return CoverSerch(dirlib),self.AudioFileSearch(dirlib)
+
+
+    def M3u8info(self,dirlib):
+
+            # 保存先確定処理
+        def SaveDir(dirlib):
+            if self.save != None and not self.remote:
+                return f"{self.save}{os.sep}{dirlib.name}.m3u8"
+            elif self.save != None and self.remote:
+                return f"{self.RemoteDir(self.save)}{os.sep}{dirlib.name}.m3u8"
+            else:
+                return f"{dirlib.resolve()}.m3u8"
+
         # プレイリストに記述する為に必要なファイルの情報を返すジェネレータ
         def FileInfo(dirlib):
             for afile in self.AudioFileSearch(dirlib):
@@ -43,36 +70,52 @@ class Playlist:
                         "file":os.path.relpath(ap_path,os.path.dirname(Path(self.save_path).resolve())), 
                         "length":audio_length
                         }
-        # 保存先確定処理
-        def SaveDir(dirlib):
-            if self.save != None and not self.remote:
-                self.save_path = f"{self.save}{sep}{dirlib.name}.m3u8"
-            elif self.save != None and self.remote:
-                self.save_path =  f"{self.RemoteDir(self.save)}{sep}{dirlib.name}.m3u8"
-            else:
-                self.save_path =  f"{dirlib.resolve()}.m3u8"
+        self.save_path = SaveDir(dirlib)
+        return FileInfo(dirlib),self.save_path
+
+    # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
+    def __Main(self,func):
+        # if self.remote:
+        #     self.save = self.RemoteDir(self.save)
         for dpath in self.input:
-            sep = os.sep
             # リモートの有無をチェックして基点ファイルを作成
             if self.remote:
+                print("リモート接続として処理します")
                 dirlib = self.RemoteDir(dpath)
             else:
                 dirlib = Path(dpath)
             # 入力されたディレクトリ存在チェック
             if not dirlib.is_dir():
-                print(f"inputに指定したディレクトリ: {dpath}は存在しません。")
+                print(f"inputに指定したディレクトリ: {dpath}は存在しません。", file=sys.stderr)
                 continue
             # サブディレクトリ有効チェック
             if self.sub_directory:
                 for dirlib_in in (i for i in dirlib.glob("*") if i.is_dir()):
-                    SaveDir(dirlib_in)
-                    yield FileInfo(dirlib_in),self.save_path
+                    yield func(dirlib_in)
             else:
                 # サブディレクトリ無効時
-                SaveDir(dirlib)
-                yield FileInfo(dirlib),self.save_path
+                yield func(dirlib)
+
+    def MobileConv(self):
+        for data_info in self.__Main(self.Convinfo):
+            # カバー画像をmobile_path で設定したディレクトリにコピー
+            # for i in data_info[0]:
+            #     from_path = Path(i)
+            #     to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
+            #     print("カバー画像をコピーします")
+            #     print(f"{from_path} > {to_path}\n")
+            #     to_path.parent.mkdir(parents=True,exist_ok=True)
+            #     shutil.copy(from_path,to_path)
+            # オーディオファイルを変換
+            for i in data_info[1]:
+                from_path = Path(i)
+                to_path = f"{self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i)).stem}.{self.conf['conv_extension']}"
+                print(f"{from_path} > {to_path}")
+                # cmd = ["ffmpeg","-i",path,rename,"-y"] + self.conf["ffmpeg_op"]
+                # call(cmd)
+
     def Write(self):
-        for result in self.__Main():
+        for result in self.__Main(self.M3u8info):
             save_path = result[1]
             with open(save_path,mode="w",encoding='utf-8') as f:
                 f.write('#EXTM3U\n')
@@ -112,5 +155,6 @@ if __name__ == "__main__":
     # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None) 
     args = parser.parse_args()
     p = Playlist(args.input,args.sub_directory,args.absolute_path,args.save,args.remote)
-    p.Write()
+    # p.Write()
+    p.MobileConv()
 
