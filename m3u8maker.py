@@ -37,11 +37,11 @@ class Playlist:
         return self.PathConv(str(server_path),server_path.name,client_path)
 
     def Convinfo(self,dirlib):
+        print(dirlib)
         def CoverSerch(dirlib):
             reg_str = "(cover|folder).(png|jpg|jpeg)"
             for coverf in (i for i in sorted(dirlib.glob("**/*")) if re.search(reg_str,str(i),flags=re.IGNORECASE)):
                 yield coverf
-        conv = Path(self.conf["mobile_path"] + re.search(f"(?<={self.conf['lib_path']})(.*)",str(dirlib)).group())
         return CoverSerch(dirlib),self.AudioFileSearch(dirlib)
 
 
@@ -73,7 +73,7 @@ class Playlist:
         self.save_path = SaveDir(dirlib)
         return FileInfo(dirlib),self.save_path
 
-    # チェック結果に応じて、__FileInfoジェネレーターと保存先情報を返すジェネレーター
+    # チェック結果に応じて、関数の結果を返す
     def __Main(self,func):
         # if self.remote:
         #     self.save = self.RemoteDir(self.save)
@@ -97,22 +97,30 @@ class Playlist:
                 yield func(dirlib)
 
     def MobileConv(self):
+        # ファイルコピー。コピーの途中のディレクトリなければ作成
+        def copy(from_p,to_p):
+            print(f"{from_p} > {to_p}\n")
+            to_path.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy(from_p,to_p)
         for data_info in self.__Main(self.Convinfo):
             # カバー画像をmobile_path で設定したディレクトリにコピー
-            # for i in data_info[0]:
-            #     from_path = Path(i)
-            #     to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
-            #     print("カバー画像をコピーします")
-            #     print(f"{from_path} > {to_path}\n")
-            #     to_path.parent.mkdir(parents=True,exist_ok=True)
-            #     shutil.copy(from_path,to_path)
+            for i in data_info[0]:
+                from_path = Path(i)
+                to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
+                print("カバー画像をコピーします")
+                copy(from_path,to_path)
             # オーディオファイルを変換
             for i in data_info[1]:
                 from_path = Path(i)
-                to_path = f"{self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i)).stem}.{self.conf['conv_extension']}"
-                print(f"{from_path} > {to_path}")
-                # cmd = ["ffmpeg","-i",path,rename,"-y"] + self.conf["ffmpeg_op"]
-                # call(cmd)
+                to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
+                to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
+                if from_path.suffix.lower() in self.conf["not_conv_ext"]:
+                    print(f"{from_path} > {to_path}\n")
+                    copy(from_path,to_path)
+                    continue
+                print(f"{from_path} > {to_path_conv}\n")
+                cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
+                call(cmd)
 
     def Write(self):
         for result in self.__Main(self.M3u8info):
@@ -144,6 +152,10 @@ if __name__ == "__main__":
         "-ap","--absolute-path", action="store_true",
         help="m3u8プレイリストのファイル参照方法が絶対パスになる。デフォルトは相対パス。"
         )
+    parser.add_argument(
+        "-ml","--mobile-library", action="store_true",
+        help="モバイル版として、音楽ファイルを圧縮したバージョンのライブラリ作成を行う"
+        )
     parser.add_argument("-s","--save", help="プレイリストの保存先を指定する。")
     parser.add_argument(
         "-r","--remote", action="store_true",
@@ -156,5 +168,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     p = Playlist(args.input,args.sub_directory,args.absolute_path,args.save,args.remote)
     # p.Write()
-    p.MobileConv()
+    if args.mobile_library:
+        p.MobileConv()
 
