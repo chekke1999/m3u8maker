@@ -37,12 +37,14 @@ class Playlist:
         return self.PathConv(str(server_path),server_path.name,client_path)
 
     def Convinfo(self,dirlib):
-        print(dirlib)
         def CoverSerch(dirlib):
             reg_str = "(cover|folder).(png|jpg|jpeg)"
             for coverf in (i for i in sorted(dirlib.glob("**/*")) if re.search(reg_str,str(i),flags=re.IGNORECASE)):
                 yield coverf
-        return CoverSerch(dirlib),self.AudioFileSearch(dirlib)
+        return {"cover":CoverSerch(dirlib),
+            "audio":self.AudioFileSearch(dirlib),
+            "playlist":self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(dirlib))
+        }
 
 
     def M3u8info(self,dirlib):
@@ -102,25 +104,30 @@ class Playlist:
             print(f"{from_p} > {to_p}\n")
             to_path.parent.mkdir(parents=True,exist_ok=True)
             shutil.copy(from_p,to_p)
+        cnt = 0
         for data_info in self.__Main(self.Convinfo):
             # カバー画像をmobile_path で設定したディレクトリにコピー
-            for i in data_info[0]:
-                from_path = Path(i)
-                to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
-                print("カバー画像をコピーします")
-                copy(from_path,to_path)
-            # オーディオファイルを変換
-            for i in data_info[1]:
-                from_path = Path(i)
-                to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
-                to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
-                if from_path.suffix.lower() in self.conf["not_conv_ext"]:
-                    print(f"{from_path} > {to_path}\n")
-                    copy(from_path,to_path)
-                    continue
-                print(f"{from_path} > {to_path_conv}\n")
-                cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
-                call(cmd)
+            # for i in data_info["cover"]:
+            #     from_path = Path(i)
+            #     to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
+            #     print("カバー画像をコピーします")
+            #     copy(from_path,to_path)
+            # # オーディオファイルを変換
+            # for i in data_info["audio"]:
+            #     from_path = Path(i)
+            #     to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
+            #     to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
+            #     if from_path.suffix.lower() in self.conf["not_conv_ext"]:
+            #         print(f"{from_path} > {to_path}\n")
+            #         copy(from_path,to_path)
+            #         continue
+            #     print(f"{from_path} > {to_path_conv}\n")
+            #     cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
+            #     call(cmd)
+            self.input[cnt] = str(data_info["playlist"])
+            cnt = cnt + 1
+        print(self.input)
+        self.Write()
 
     def Write(self):
         for result in self.__Main(self.M3u8info):
