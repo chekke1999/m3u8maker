@@ -41,14 +41,13 @@ class Playlist:
             reg_str = "(cover|folder).(png|jpg|jpeg)"
             for coverf in (i for i in sorted(dirlib.glob("**/*")) if re.search(reg_str,str(i),flags=re.IGNORECASE)):
                 yield coverf
+        print(dirlib)
         return {"cover":CoverSerch(dirlib),
-            "audio":self.AudioFileSearch(dirlib),
-            "playlist":self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(dirlib))
+            "audio":self.AudioFileSearch(dirlib)
         }
 
 
     def M3u8info(self,dirlib):
-
             # 保存先確定処理
         def SaveDir(dirlib):
             if self.save != None and not self.remote:
@@ -107,31 +106,32 @@ class Playlist:
         cnt = 0
         for data_info in self.__Main(self.Convinfo):
             # カバー画像をmobile_path で設定したディレクトリにコピー
-            # for i in data_info["cover"]:
-            #     from_path = Path(i)
-            #     to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
-            #     print("カバー画像をコピーします")
-            #     copy(from_path,to_path)
-            # # オーディオファイルを変換
-            # for i in data_info["audio"]:
-            #     from_path = Path(i)
-            #     to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
-            #     to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
-            #     if from_path.suffix.lower() in self.conf["not_conv_ext"]:
-            #         print(f"{from_path} > {to_path}\n")
-            #         copy(from_path,to_path)
-            #         continue
-            #     print(f"{from_path} > {to_path_conv}\n")
-            #     cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
-            #     call(cmd)
-            self.input[cnt] = str(data_info["playlist"])
-            cnt = cnt + 1
-        print(self.input)
+            for i in data_info["cover"]:
+                from_path = Path(i)
+                to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
+                print("カバー画像をコピーします")
+                copy(from_path,to_path)
+            # オーディオファイルを変換
+            for i in data_info["audio"]:
+                from_path = Path(i)
+                to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
+                to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
+                if from_path.suffix.lower() in self.conf["not_conv_ext"]:
+                    print(f"{from_path} > {to_path}\n")
+                    copy(from_path,to_path)
+                    continue
+                print(f"{from_path} > {to_path_conv}\n")
+                cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
+                call(cmd)
+        self.input = [str(self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],i)) for i in self.input]
+        self.remote = False
+        self.save = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(Path(self.save_path).parent))
         self.Write()
 
     def Write(self):
         for result in self.__Main(self.M3u8info):
             save_path = result[1]
+            Path(save_path).parent.mkdir(parents=True,exist_ok=True)
             with open(save_path,mode="w",encoding='utf-8') as f:
                 f.write('#EXTM3U\n')
                 for finfo in result[0]:
@@ -156,11 +156,11 @@ if __name__ == "__main__":
         help="[-i]で指定したディレクトリのサブディレクトリをプレイリスト化する"
     )
     parser.add_argument(
-        "-ap","--absolute-path", action="store_true",
+        "-a","--absolute-path", action="store_true",
         help="m3u8プレイリストのファイル参照方法が絶対パスになる。デフォルトは相対パス。"
         )
     parser.add_argument(
-        "-ml","--mobile-library", action="store_true",
+        "-m","--mobile-library", action="store_true",
         help="モバイル版として、音楽ファイルを圧縮したバージョンのライブラリ作成を行う"
         )
     parser.add_argument("-s","--save", help="プレイリストの保存先を指定する。")
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     # Namespace(input=['/hoge/hoge1'], sub_directory=False, absolute_path=False, save=None) 
     args = parser.parse_args()
     p = Playlist(args.input,args.sub_directory,args.absolute_path,args.save,args.remote)
-    # p.Write()
+    p.Write()
     if args.mobile_library:
         p.MobileConv()
 
