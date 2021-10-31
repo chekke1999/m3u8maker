@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import os,argparse,re,toml,shutil,sys
-from pprint import pprint
+import os,argparse,re,toml,shutil
+from sys import stderr
 from pathlib import Path
 from mutagen import File
 from subprocess import call
@@ -12,14 +12,14 @@ class Playlist:
         self.absolute_path = absolute_path
         self.save = save
         self.remote = remote
-        config_path = f"{os.path.dirname(os.path.abspath(__file__))}{os.sep}config.toml"
+        config_path = f"{path.expanduser('~')}{sep}.config{sep}m3u8maker{sep}config.toml"
         self.conf = toml.load(config_path)
         # ライブラリの上書き防止
         # シンボリックリンクを解決した絶対パスを比較
         if Path(self.conf["lib_path"]).resolve() == Path(self.conf["mobile_path"]).resolve():
-            print(f"設定ファイル: {config_path}", file=sys.stderr)
-            print("以下のlib_pathとmobile_pathの記述が同じです。ライブラリ破壊防止のため終了します。", file=sys.stderr)
-            print(f"lib_path{self.conf['lib_path']}, moble_path: {self.conf['mobile_path']}", file=sys.stderr)
+            print(f"設定ファイル: {config_path}", file=stderr)
+            print("以下のlib_pathとmobile_pathの記述が同じです。ライブラリ破壊防止のため終了します。", file=stderr)
+            print(f"lib_path{self.conf['lib_path']}, moble_path: {self.conf['mobile_path']}", file=stderr)
             exit()
 
     def AudioFileSearch(self,dirlib):
@@ -87,7 +87,7 @@ class Playlist:
                 dirlib = Path(dpath)
             # 入力されたディレクトリ存在チェック
             if not dirlib.is_dir():
-                print(f"inputに指定したディレクトリ: {dpath}は存在しません。", file=sys.stderr)
+                print(f"inputに指定したディレクトリ: {dpath}は存在しません。", file=stderr)
                 continue
             # サブディレクトリ有効チェック
             if self.sub_directory:
@@ -101,7 +101,7 @@ class Playlist:
         # ファイルコピー。コピーの途中のディレクトリなければ作成
         def copy(from_p,to_p):
             print(f"{from_p} > {to_p}\n")
-            to_path.parent.mkdir(parents=True,exist_ok=True)
+            to_p.parent.mkdir(parents=True,exist_ok=True)
             shutil.copy(from_p,to_p)
         cnt = 0
         for data_info in self.__Main(self.Convinfo):

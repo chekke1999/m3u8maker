@@ -1,0 +1,7 @@
+README.md
+setup.cfg
+setup.py
+m3u8maker.egg-info/PKG-INFO
+m3u8maker.egg-info/SOURCES.txt
+m3u8maker.egg-info/dependency_links.txt
+m3u8maker.egg-info/top_level.txt

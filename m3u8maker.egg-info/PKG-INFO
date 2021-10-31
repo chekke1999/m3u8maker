@@ -1,0 +1,23 @@
+Metadata-Version: 2.1
+Name: m3u8maker
+Version: 3.0.0
+Summary: Packaging sample project
+Home-page: https://github.com/chekke1999/m3u8maker
+License: GNU GENERAL PUBLIC LICENSE
+Description: # m3u8maker
+        引数で渡されたディレクトリをベースにm3u8を生成するプログラム。
+        必要に応じて、引数でオプションを指定したり、設定ファイルを書き換えることで挙動が変化する。
+        
+        ## 使い方
+        保存先を指定しない場合
+        ```bash
+        python3 m3u8playlistMaker fullpathdir
+        ```
+        
+        保存先を指定する場合
+        ```bash
+        python3 m3u8playlistMaker -d savedir fullpathdir
+        ```
+        
+Platform: UNKNOWN
+Description-Content-Type: text/markdown
