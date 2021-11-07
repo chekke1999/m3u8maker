@@ -1,9 +1,9 @@
 # リモート時とサブライブラリ作成時の基準となるパス。
-main_lib = "/home/shoji/Music/test"
+main_lib = "/home/shoji/Music/main"
 
 # サブライブラリとなるパス。
 # ライブラリを生成する処理をしたいなら必須。
-sub_lib = "/home/shoji/Music/test2"
+sub_lib = "/home/shoji/Music/sub"
 
 # サブライブラリ作成時に変換処理を施す時のファイル形式を決める
 # ffmpegで変換先のフォーマットを決めるためには必須。ドット付きの小文字を入れること
