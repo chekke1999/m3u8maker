@@ -7,5 +7,3 @@ m3u8maker.egg-info/dependency_links.txt
 m3u8maker.egg-info/entry_points.txt
 m3u8maker.egg-info/requires.txt
 m3u8maker.egg-info/top_level.txt
-src/__init__.py
-src/__main__.py

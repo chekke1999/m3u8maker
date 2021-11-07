@@ -17,10 +17,10 @@ class Playlist:
         self.conf = toml.load(config_path)
         # ライブラリの上書き防止
         # シンボリックリンクを解決した絶対パスを比較
-        if Path(self.conf["lib_path"]).resolve() == Path(self.conf["mobile_path"]).resolve():
+        if Path(self.conf["main_lib"]).resolve() == Path(self.conf["sub_lib"]).resolve():
             print(f"設定ファイル: {config_path}", file=stderr)
-            print("以下のlib_pathとmobile_pathの記述が同じです。ライブラリ破壊防止のため終了します。", file=stderr)
-            print(f"lib_path{self.conf['lib_path']}, moble_path: {self.conf['mobile_path']}", file=stderr)
+            print("以下のmain_libとsub_libの記述が同じです。ライブラリ破壊防止のため終了します。", file=stderr)
+            print(f"main_lib{self.conf['main_lib']}, moble_path: {self.conf['sub_lib']}", file=stderr)
             exit()
 
     def AudioFileSearch(self,dirlib):
@@ -33,7 +33,7 @@ class Playlist:
         return Path(after + re.search(f"(?<={from_behind})(.*)",source).group())
     # リモート時のパス変換処理ラップ
     def RemoteDir(self,path):
-        server_path = Path(self.conf["lib_path"])
+        server_path = Path(self.conf["main_lib"])
         client_path = path.replace("\\","/")
         return self.PathConv(str(server_path),server_path.name,client_path)
 
@@ -106,16 +106,16 @@ class Playlist:
             shutil.copy(from_p,to_p)
         cnt = 0
         for data_info in self.__Main(self.Convinfo):
-            # カバー画像をmobile_path で設定したディレクトリにコピー
+            # カバー画像をsub_lib で設定したディレクトリにコピー
             for i in data_info["cover"]:
                 from_path = Path(i)
-                to_path = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(i))
+                to_path = self.PathConv(self.conf["sub_lib"],self.conf["main_lib"],str(i))
                 print("カバー画像をコピーします")
                 copy(from_path,to_path)
             # オーディオファイルを変換
             for i in data_info["audio"]:
                 from_path = Path(i)
-                to_path = self.PathConv(self.conf['mobile_path'],self.conf['lib_path'],str(i))
+                to_path = self.PathConv(self.conf['sub_lib'],self.conf['main_lib'],str(i))
                 to_path_conv = f"{to_path.parent}/{to_path.stem}{self.conf['to_conv_ext']}"
                 if from_path.suffix.lower() in self.conf["not_conv_ext"]:
                     print(f"{from_path} > {to_path}\n")
@@ -124,9 +124,9 @@ class Playlist:
                 print(f"{from_path} > {to_path_conv}\n")
                 cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
                 call(cmd)
-        self.input = [str(self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],i)) for i in self.input]
-        self.remote = False
-        self.save = self.PathConv(self.conf["mobile_path"],self.conf["lib_path"],str(Path(self.save_path).parent))
+        self.input = [str(self.PathConv(self.conf["sub_lib"],self.conf["main_lib"],i)) for i in self.input]
+        self.remote = False 
+        self.save = self.PathConv(self.conf["sub_lib"],self.conf["main_lib"],str(Path(self.save_path).parent))
         self.Write()
 
     def Write(self):
