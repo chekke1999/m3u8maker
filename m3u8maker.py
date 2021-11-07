@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os,argparse,re,toml,shutil
+import argparse,re,toml,shutil
+from os import path,sep
 from sys import stderr
 from pathlib import Path
 from mutagen import File
@@ -51,9 +52,9 @@ class Playlist:
             # 保存先確定処理
         def SaveDir(dirlib):
             if self.save != None and not self.remote:
-                return f"{self.save}{os.sep}{dirlib.name}.m3u8"
+                return f"{self.save}{sep}{dirlib.name}.m3u8"
             elif self.save != None and self.remote:
-                return f"{self.RemoteDir(self.save)}{os.sep}{dirlib.name}.m3u8"
+                return f"{self.RemoteDir(self.save)}{sep}{dirlib.name}.m3u8"
             else:
                 return f"{dirlib.resolve()}.m3u8"
 
@@ -68,7 +69,7 @@ class Playlist:
                 else:
                     yield {
                         "title":afile.stem,
-                        "file":os.path.relpath(ap_path,os.path.dirname(Path(self.save_path).resolve())), 
+                        "file":path.relpath(ap_path,zpath.dirname(Path(self.save_path).resolve())), 
                         "length":audio_length
                         }
         self.save_path = SaveDir(dirlib)
@@ -139,8 +140,7 @@ class Playlist:
                     f.write(f"#EXTINF:{finfo['length']},{finfo['title']}\n{finfo['file']}\n")
             print("-"*80)
             print(f"{self.save_path}が出力されました")
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
         description="ディレクトリをベースにm3u8形式のプレイリストを生成。",
         formatter_class=argparse.RawTextHelpFormatter
@@ -177,4 +177,5 @@ if __name__ == "__main__":
     p.Write()
     if args.mobile_library:
         p.MobileConv()
-
+if __name__ == "__main__":
+    main()
