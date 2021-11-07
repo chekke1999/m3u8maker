@@ -4,14 +4,14 @@
 
 ## Install
 Pythonとpipが使える環境であることを確認してください。
-### Linuxの場合
+### Linux
 ターミナルを開いて以下のコマンドを入力
 ```bash
 git clone https://github.com/chekke1999/m3u8maker
 cd m3u8maker
 pip3 install .
 ```
-### Windowsの場合
+### Windows
 PowerShellやコマンドプロンプトを開いて以下のコマンドを入力
 ```powershell
 git clone https://github.com/chekke1999/m3u8maker
@@ -19,12 +19,17 @@ cd m3u8maker
 pip3 install .
 ```
 ## Uninstall
-### Linuxの場合
-```bash 
+### Linux
+```bash
 pip3 uninstall m3u8maker
 ```
-### Windosの場合
+### Windows
 ```powershell
 pip3 uninstall m3u8maker
 ```
-## 使い方
+## How to use
+
+## Options
+|Option|omit|Ex.|description|
+|:-|:-|:-|:-|
+|--input|-i||Plylistにしたいフォルダを渡す。必須引数。|

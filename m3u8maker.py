@@ -23,13 +23,20 @@ class Playlist:
             print(f"main_lib{self.conf['main_lib']}, moble_path: {self.conf['sub_lib']}", file=stderr)
             exit()
 
+    def path_resolve(self,path:str):
+        # シンボリックリンクや相対パスを絶対パスに
+        return str(Path(path).resolve())
     def AudioFileSearch(self,dirlib):
         for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
             if File(str(files)) != None:
                 yield files 
-
     # パス変換処理本体
     def PathConv(self, after:str, from_behind:str, source:str):
+        # from_behind = self.path_resolve(from_behind)
+        # source = self.path_resolve(source)
+        print("from: " + from_behind)
+        print("source: " + str(Path(source).resolve()))
+        print("after: " + after)
         return Path(after + re.search(f"(?<={from_behind})(.*)",source).group())
     # リモート時のパス変換処理ラップ
     def RemoteDir(self,path):
@@ -69,7 +76,7 @@ class Playlist:
                 else:
                     yield {
                         "title":afile.stem,
-                        "file":path.relpath(ap_path,zpath.dirname(Path(self.save_path).resolve())), 
+                        "file":path.relpath(ap_path,path.dirname(Path(self.save_path).resolve())), 
                         "length":audio_length
                         }
         self.save_path = SaveDir(dirlib)
