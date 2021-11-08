@@ -1,3 +1,0 @@
-[console_scripts]
-m3u8maker = m3u8maker:main
-
