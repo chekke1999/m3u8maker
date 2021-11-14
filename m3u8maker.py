@@ -36,8 +36,8 @@ class Playlist:
     def PathConv(self, after:str, from_behind:str, source:str):
         # from_behind = self.path_resolve(from_behind)
         # source = self.path_resolve(source)
-        from_behind = from_behind
-        source = source
+        from_behind = from_behind.replace("\\","/")
+        source = source.replace("\\","/")
         print("from: " + from_behind)
         print("source: " + source)
         print("after: " + after)
@@ -46,6 +46,7 @@ class Playlist:
     def RemoteDir(self,path):
         server_path = Path(self.conf["main_lib"])
         client_path = path.replace("\\","/")
+        print("clt",client_path)
         print(self.PathConv(str(server_path),server_path.name,client_path))
         return self.PathConv(str(server_path),server_path.name,client_path)
 
@@ -140,9 +141,11 @@ class Playlist:
                 print(f"{from_path} > {to_path_conv}\n")
                 cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
                 call(cmd)
-        self.input = [str(self.PathConv(self.conf["sub_lib"],self.conf["main_lib"],i)) for i in self.input]
+            print("data_info:",data_info["audio"])
+        base_name = Path(self.conf["main_lib"]).name
+        self.input = [str(self.PathConv(self.conf["sub_lib"],base_name,i)) for i in self.input]
         self.remote = False 
-        self.save = self.PathConv(self.conf["sub_lib"],self.conf["main_lib"],str(Path(self.save_path).parent))
+        self.save = self.PathConv(self.conf["sub_lib"],base_name,str(Path(self.save_path).parent))
         self.Write()
 
     def Write(self):
@@ -176,8 +179,8 @@ def main():
         help="m3u8プレイリストのファイル参照方法が絶対パスになる。デフォルトは相対パス。"
         )
     parser.add_argument(
-        "-m","--mobile-library", action="store_true",
-        help="モバイル版として、音楽ファイルを圧縮したバージョンのライブラリ作成を行う"
+        "-sl","--sub-library", action="store_true",
+        help="サブライブラリ作成を行う"
         )
     parser.add_argument("-s","--save", help="プレイリストの保存先を指定する。")
     parser.add_argument(
@@ -191,7 +194,7 @@ def main():
     args = parser.parse_args()
     p = Playlist(args.input,args.sub_directory,args.absolute_path,args.save,args.remote)
     p.Write()
-    if args.mobile_library:
+    if args.sub_library:
         p.MobileConv()
 if __name__ == "__main__":
     main()
