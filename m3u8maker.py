@@ -12,6 +12,8 @@ class Playlist:
         self.sub_directory = sub_directory
         self.absolute_path = absolute_path
         self.save = save
+        print("コンストラクタinput:",self.input)
+        print("コンストラクタsave:",self.save)
         self.remote = remote
         config_path = f"{path.expanduser('~')}{sep}.config{sep}m3u8maker{sep}config.toml"
         self.conf = toml.load(config_path)
@@ -34,14 +36,17 @@ class Playlist:
     def PathConv(self, after:str, from_behind:str, source:str):
         # from_behind = self.path_resolve(from_behind)
         # source = self.path_resolve(source)
+        from_behind = from_behind
+        source = source
         print("from: " + from_behind)
-        print("source: " + str(Path(source).resolve()))
+        print("source: " + source)
         print("after: " + after)
         return Path(after + re.search(f"(?<={from_behind})(.*)",source).group())
     # リモート時のパス変換処理ラップ
     def RemoteDir(self,path):
         server_path = Path(self.conf["main_lib"])
         client_path = path.replace("\\","/")
+        print(self.PathConv(str(server_path),server_path.name,client_path))
         return self.PathConv(str(server_path),server_path.name,client_path)
 
     def Convinfo(self,dirlib):
@@ -61,6 +66,9 @@ class Playlist:
             if self.save != None and not self.remote:
                 return f"{self.save}{sep}{dirlib.name}.m3u8"
             elif self.save != None and self.remote:
+                print("保存先処理")
+                print("save:",self.save)
+                print("m3u8",f"{sep}{dirlib.name}.m3u8")
                 return f"{self.RemoteDir(self.save)}{sep}{dirlib.name}.m3u8"
             else:
                 return f"{dirlib.resolve()}.m3u8"
@@ -89,8 +97,9 @@ class Playlist:
         for dpath in self.input:
             # リモートの有無をチェックして基点ファイルを作成
             if self.remote:
-                print("リモート接続として処理します")
+                print("リモート接続として処理します。")
                 dirlib = self.RemoteDir(dpath)
+                
             else:
                 dirlib = Path(dpath)
             # 入力されたディレクトリ存在チェック
