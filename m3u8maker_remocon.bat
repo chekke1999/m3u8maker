@@ -1,5 +1,5 @@
 @echo off
-set command=$HOME/.local/bin/m3u8maker -sl -r -s 'N:\Music\test\Playlist' -i
+set command=$HOME/.local/bin/m3u8maker -sl -r -s 'N:\Music\main\Playlist' -i
 
 for %%f in (%*) do (
     echo ^'%%~f%^'
