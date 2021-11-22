@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.8
 import argparse,re,toml,shutil
 from os import path,sep
 from sys import stderr
