@@ -5,6 +5,7 @@ from sys import stderr
 from pathlib import Path
 from mutagen import File
 from subprocess import call
+from pprint import pprint
 
 class Playlist:
     def __init__(self, input_directory:list, sub_directory:bool, absolute_path:bool, save:str, remote:bool):
@@ -29,9 +30,15 @@ class Playlist:
         # シンボリックリンクや相対パスを絶対パスに
         return str(Path(path).resolve())
     def AudioFileSearch(self,dirlib):
-        for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
-            if File(str(files)) != None:
-                yield files 
+        try:
+            for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
+                if File(str(files)) != None:
+                    yield files 
+        except:
+            print("mutagenのFile()が読み込めないファイルを拾ったかもしれないエラー")
+            print("確認した限り、Webpファイルを読み込むとエラーを吐く")
+            print("とりあえずスキップ")
+            pass
     # パス変換処理本体
     def PathConv(self, after:str, from_behind:str, source:str):
         # from_behind = self.path_resolve(from_behind)
@@ -141,7 +148,6 @@ class Playlist:
                 print(f"{from_path} > {to_path_conv}\n")
                 cmd = ["ffmpeg","-i",from_path,to_path_conv,"-y"] + self.conf["ffmpeg_op"]
                 call(cmd)
-            print("data_info:",data_info["audio"])
         base_name = Path(self.conf["main_lib"]).name
         self.input = [str(self.PathConv(self.conf["sub_lib"],base_name,i)) for i in self.input]
         self.remote = False 
@@ -157,6 +163,7 @@ class Playlist:
                 for finfo in result[0]:
                     print(finfo["title"])
                     f.write(f"#EXTINF:{finfo['length']},{finfo['title']}\n{finfo['file']}\n")
+
             print("-"*80)
             print(f"{self.save_path}が出力されました")
 def main():
