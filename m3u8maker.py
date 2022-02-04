@@ -30,15 +30,16 @@ class Playlist:
         # シンボリックリンクや相対パスを絶対パスに
         return str(Path(path).resolve())
     def AudioFileSearch(self,dirlib):
-        try:
-            for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
+
+        for files in (i for i in sorted(dirlib.glob("**/*")) if i.is_file()):
+            try:
                 if File(str(files)) != None:
                     yield files 
-        except:
-            print("mutagenのFile()が読み込めないファイルを拾ったかもしれないエラー")
-            print("確認した限り、Webpファイルを読み込むとエラーを吐く")
-            print("とりあえずスキップ")
-            pass
+            except:
+                print("mutagenのFile()が読み込めないファイルを拾ったかもしれないエラー")
+                print("確認した限り、Webpファイルを読み込むとエラーを吐く")
+                print("とりあえずスキップ")
+                pass
     # パス変換処理本体
     def PathConv(self, after:str, from_behind:str, source:str):
         # from_behind = self.path_resolve(from_behind)
